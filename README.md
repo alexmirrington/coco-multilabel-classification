@@ -2,7 +2,7 @@
 
 ## Running Instructions
 
-Download the dataset and place it in a folder `input` as follows:
+Download the dataset, unzip it and place it in the `input` folder as follows:
 
 ```Text
 |_ code
