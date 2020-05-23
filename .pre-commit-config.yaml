@@ -7,6 +7,7 @@ repos:
   - id: trailing-whitespace
   - id: end-of-file-fixer
   - id: double-quote-string-fixer
+  - id: name-tests-test
 - repo: https://github.com/timothycrosley/isort/
   rev: 4.3.21-2
   hooks:
@@ -15,20 +16,25 @@ repos:
   rev: 3.8.0
   hooks:
   - id: flake8
-# Use local pylint hook for import resolution
-- repo: local
-  hooks:
-  - id: pylint
-    name: pylint
-    entry: pylint
-    language: system
-    types: [python]
     args:
     - ./code/algorithm
-    - --disable=similarities
+    - ./code/tests
+# Use local pylint hook for import resolution
+# - repo: local
+#   hooks:
+#   - id: pylint
+#     name: pylint
+#     entry: pylint
+#     language: system
+#     types: [python]
+#     args:
+#     - ./code/algorithm
+#     - ./code/tests
+#     - --disable=similarities
 - repo: https://github.com/PyCQA/pydocstyle
   rev: 5.0.2
   hooks:
   - id: pydocstyle
     args:
     - ./code/algorithm
+    - ./code/tests
