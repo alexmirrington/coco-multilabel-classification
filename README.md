@@ -37,3 +37,11 @@ pre-commit install
 ```
 
 This ensures that all committed code adheres to `flake8`, `pylint` and `pydocstyle` linter rules. Additionally, I would recommend installing `flake8`, `pylint` and `pydocstyle` so you can minimise warnings and errors in your text editor or IDE while programming so there is less to fix up before committing.
+
+## Running Unit Tests
+
+You can run unit tests with the following command when in the root directory of the project:
+
+```Bash
+python -m unittest discover -s ./code -p "*_test.py"
+```
