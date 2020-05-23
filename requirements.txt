@@ -1,3 +1,4 @@
 Pillow
 pre-commit
+pylint
 torch
