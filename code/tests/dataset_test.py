@@ -2,9 +2,10 @@
 
 import os
 import unittest
+
 from algorithm.dataset import ImageCaptionDataset
-from torch.utils.data import Dataset, DataLoader
 from torch import Tensor
+from torch.utils.data import DataLoader, Dataset
 
 
 class TestImageCaptionDataset(unittest.TestCase):

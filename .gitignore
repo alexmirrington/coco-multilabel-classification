@@ -1,5 +1,9 @@
 # Project Specific
 input/
+code/logs
+
+# torchnlp
+.glove
 
 # MacOS
 .DS_Store

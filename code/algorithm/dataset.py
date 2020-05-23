@@ -8,13 +8,21 @@ import torchvision.transforms as transforms
 from PIL import Image
 from torch.utils.data import Dataset
 
+# from torchtext.vocab import GloVe
+
 
 class ImageCaptionDataset(Dataset):
     """Class for dataset interaction, designed for use with PyTorch."""
 
     TIERS = ('train', 'test')
 
-    def __init__(self, path, tier):
+    def __init__(
+            self,
+            path,
+            tier,
+            embeddings=None,
+            preprocessor=None,
+            transform=None):
         """Create a new dataset instance that loads images and captions from \
         the provided path for the given tier."""
         super().__init__()
@@ -25,6 +33,9 @@ class ImageCaptionDataset(Dataset):
         self.path = path
         self.tier = tier
         self.data = None
+        self.embeddings = embeddings
+        self.preprocessor = preprocessor
+        self.transform = transform
         self._init_dataset()
 
     def _init_dataset(self):
@@ -40,18 +51,19 @@ class ImageCaptionDataset(Dataset):
                 escapechar='`'
             )
 
-    def _transform(self, img):
-        """Transform a PIL image into a tensor using a series of image \
-        manipulations."""
-        pipeline = transforms.Compose([
-            transforms.CenterCrop(128),
-            transforms.ToTensor(),
-        ])
-        tensor = pipeline(img)
-        mean = tensor.mean(dim=(1, 2))
-        std = tensor.std(dim=(1, 2))
-        norm = transforms.Normalize(mean, std, inplace=True)
-        return norm(tensor)
+        # Preprocess captions
+        caption_col = self.data.columns[-1]
+        if self.preprocessor is not None:
+            self.data[caption_col] = self.data[caption_col].apply(
+                self.preprocessor
+            )
+
+        # Preprocess labels
+        if self.tier != self.TIERS[-1]:
+            lbl_col = self.data.columns[1]
+            self.data[lbl_col] = self.data[lbl_col].apply(
+                lambda lbls: [int(lbl) for lbl in lbls.split()]
+            )
 
     def __getitem__(self, key):
         """Get an item from the dataset for a given index.
@@ -60,17 +72,24 @@ class ImageCaptionDataset(Dataset):
         the returned record; e.g. if `tier = 'test'`, then index 0 refers to \
         image id 30000.
         """
+        # Get images and apply transforms
         image_file = self.data[self.data.columns[0]][key]
         image = Image.open(os.path.join(self.path, 'data', image_file))
-        image = self._transform(image)
+        if self.transform is not None:
+            image = self.transform(image)
 
+        image = transforms.ToTensor()(image)
+
+        # Get caption embeddings
         caption = self.data[self.data.columns[-1]][key]
+        if self.embeddings is not None:
+            caption = [self.embeddings[word] for word in caption]
 
-        if self.tier != 'test':
+        if self.tier != self.TIERS[-1]:
             labels = self.data[self.data.columns[1]][key]
-            return image, caption, labels
+            return image_file, image, caption, labels
 
-        return image, caption
+        return image_file, image, caption
 
     def __len__(self):
         """Return the length of the dataset."""

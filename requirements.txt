@@ -1,5 +1,7 @@
+pandas
 Pillow
 pre-commit
-pylint
+termcolor
 torch
+torchtext
 torchvision
