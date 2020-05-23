@@ -26,13 +26,33 @@ def parse_args(args):
     """Parse the arguments from the command line, and return a config object that \
     stores the values of each config parameter."""
     parser = argparse.ArgumentParser()
+
+    general_group = parser.add_argument_group('General')
     model_params_group = parser.add_argument_group('Model parameters')
     config_group = parser.add_argument_group('Configuration')
 
-    parser.add_argument(
+    general_group.add_argument(
         '--debug',
         action='store_true',
         help='Print additional debugging information.'
+    )
+    general_group.add_argument(
+        '--test',
+        action='store_true',
+        help='Evaluate the model on the test set and save predictions \
+            to the output directory as specified by --output-dir.'
+    )
+    general_group.add_argument(
+        '--load',
+        type=str,
+        required=False,
+        help='Load model weights from the specified file.'
+    )
+    general_group.add_argument(
+        '--save',
+        type=str,
+        required=False,
+        help='Save the model weights to the specified file.'
     )
     config_group.add_argument(
         '--data-dir',
@@ -41,11 +61,26 @@ def parse_args(args):
             os.path.pardir,
             'input'
         )),
+        type=str,
+        required=False,
         help='The directory to load the dataset from.'
+    )
+    config_group.add_argument(
+        '--output-dir',
+        default=os.path.relpath(os.path.join(
+            os.path.dirname(__file__),
+            os.path.pardir,
+            'output'
+        )),
+        type=str,
+        required=False,
+        help='The directory to save test set predictions to.'
     )
     model_params_group.add_argument(
         '--batch-size',
         default=64,
+        type=int,
+        required=False,
         help='The batch size to use when training, validating and testing.'
     )
     return parser.parse_args(args)
