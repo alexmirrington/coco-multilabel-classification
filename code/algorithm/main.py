@@ -38,22 +38,26 @@ def main(config):
     test_data = ImageCaptionDataset(config.data_dir, 'test')
     print(f'Test: {len(test_data)}')
 
+    # Set up metrics to collect
+    metrics = MetricCollection(metrics={
+        'micro_f1': micro_f1,
+        'macro_f1': macro_f1,
+        'weighted_f1': weighted_f1
+    })
+
     if config.load:
+        # Load model from file
         try:
-            load(config)
+            model, optimiser, loss, epoch = load(config)
         except ValueError as e:
             print(colored(e.args[0], color='red'))
             return
+        train(model, optimiser, loss, train_data, config, metrics, epoch)
     else:
         # Example configuration, TODO migrate to model factory
         model = FasterRCNN()
         loss = BCEWithLogitsLoss()
         optimiser = Adam(model.parameters())
-        metrics = MetricCollection(metrics={
-            'micro_f1': micro_f1,
-            'macro_f1': macro_f1,
-            'weighted_f1': weighted_f1
-        })
         train(model, optimiser, loss, train_data, config, metrics)
 
     if config.test:
@@ -176,6 +180,7 @@ def test(model, config, data):
         labels, _ = model(imgs, captions)
         with open(path, 'a') as f:
             for im_id, out in zip(img_ids, labels):
+                out = [str(i) for i in out]
                 string = f'{im_id},{" ".join(out)}\n'
                 f.write(string)
 
