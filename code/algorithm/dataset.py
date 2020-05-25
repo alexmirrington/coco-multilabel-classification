@@ -1,6 +1,7 @@
 """Module containing utilities for loading and preprocessing datasets."""
 import os.path
 import re
+from collections.abc import Iterable
 from io import StringIO
 
 import pandas as pd
@@ -9,6 +10,13 @@ from PIL import Image
 from torch.utils.data import Dataset
 
 # from torchtext.vocab import GloVe
+
+
+def variable_tensor_size_collator(batch):
+    """Collate a batch ready for dataloaders to allow for image \
+    tensors of variable size."""
+    assert isinstance(batch, Iterable)
+    return list(zip(*batch))
 
 
 class ImageCaptionDataset(Dataset):
