@@ -1,4 +1,5 @@
 """Module containing code for a FasterRCNN object detector."""
+from numpy import unique
 from torch.nn import Module
 from torchvision.models.detection import fasterrcnn_resnet50_fpn
 
@@ -17,4 +18,7 @@ class FasterRCNN(Module):
     def forward(self, *data):
         """Propagate data through the model."""
         images, _ = data
-        return self.rcnn(images)
+        results = self.rcnn(images)
+        labels = [unique(result['labels'].cpu().numpy()) for result in results]
+        labels = [[lbl for lbl in lbls if lbl < 20] for lbls in labels]
+        return tuple(labels), results

@@ -6,13 +6,16 @@ import os.path
 import sys
 from collections.abc import Iterable
 
-import numpy as np
 import torch
 from dataset import ImageCaptionDataset
+from metrics import MetricCollection, micro_f1
 from modules.faster_rcnn import FasterRCNN
 from termcolor import colored
 from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
+from utilities import binarise_labels
+
+CLASSES = list(range(0, 20))
 
 
 def main(config):
@@ -20,7 +23,7 @@ def main(config):
     print(colored('Preprocessing...', color='cyan'))
 
     train_val_data = ImageCaptionDataset(config.data_dir, 'train')
-    split = int(0.9*len(train_val_data))
+    split = int(0.999*len(train_val_data))
     train_data = Subset(train_val_data, range(0, split))
     val_data = Subset(train_val_data, range(split, len(train_val_data)))
     print(f'Train: {len(train_data)}')
@@ -30,6 +33,9 @@ def main(config):
     print(f'Test: {len(test_data)}')
 
     model = FasterRCNN()
+    metrics = MetricCollection(metrics={'micro_f1': micro_f1})
+    evaluate(model, config, val_data, metrics)
+
     if config.test:
         test(model, config, test_data)
 
@@ -39,6 +45,40 @@ def variable_tensor_size_collator(batch):
     tensors of variable size."""
     assert isinstance(batch, Iterable)
     return list(zip(*batch))
+
+
+def evaluate(model, config, data, metrics):
+    """Evaluate a model on the specified metrics."""
+    print(colored('Evaluating...', color='cyan'))
+    # Move model to device
+    cuda = torch.cuda.is_available()
+    device = torch.device('cuda' if cuda else 'cpu')
+    print(f'Using device "{device}"')
+    model = model.to(device)
+    model.eval()
+
+    # Create dataloader
+    loader_kwargs = {'num_workers': 1, 'pin_memory': True} if cuda else {}
+    loader = DataLoader(
+        data,
+        collate_fn=variable_tensor_size_collator,
+        batch_size=1,
+        shuffle=False,
+        **loader_kwargs
+    )
+
+    all_preds = []
+    all_labels = []
+    for img_ids, imgs, captions, labels in tqdm(loader):
+        imgs = [img.to(device) for img in imgs]
+        preds, _ = model(imgs, captions)
+        print(labels)
+        print(preds)
+        binarised_labels, _ = binarise_labels(labels, classes=CLASSES)
+        binarised_preds, _ = binarise_labels(preds, classes=CLASSES)
+        all_labels += list(binarised_labels)
+        all_preds += list(binarised_preds)
+    print(metrics.evaluate(all_preds, all_labels))
 
 
 def test(model, config, data):
@@ -77,11 +117,7 @@ def test(model, config, data):
 
     for img_ids, imgs, captions in tqdm(loader):
         imgs = [img.to(device) for img in imgs]
-        results = model(imgs, captions)
-        labels = [np.unique(
-            result['labels'].cpu().numpy()
-        ) for result in results]
-        labels = [[str(lbl) for lbl in lbls if lbl < 20] for lbls in labels]
+        labels, _ = model(imgs, captions)
         with open(path, 'a') as f:
             for im_id, out in zip(img_ids, labels):
                 string = f'{im_id},{" ".join(out)}\n'
