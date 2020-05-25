@@ -13,6 +13,12 @@ class MetricCollection:
         function takes a list of `y_true` and `y_pred` labels as \
         input."""
         self.metrics = metrics
+        self.__cache = None
+
+    @property
+    def cache(self):
+        """Get the cached values of the the last call to `evaluate`."""
+        return self.__cache
 
     def add_metrics(self, **metrics):
         """Update the current metric set with a collection of metrics \
@@ -28,6 +34,7 @@ class MetricCollection:
         results = {}
         for key, func in self.metrics.items():
             results[key] = func(y_true, y_pred)
+        self.__cache = results
         return results
 
 
@@ -36,4 +43,13 @@ def micro_f1(y_true, y_pred):
     """Compute the micro f1 of two label sets."""
     return f1_score(y_true, y_pred, average='micro')
 
+
+def macro_f1(y_true, y_pred):
+    """Compute the macro f1 of two label sets."""
+    return f1_score(y_true, y_pred, average='macro')
+
+
+def weighted_f1(y_true, y_pred):
+    """Compute the weighted f1 of two label sets."""
+    return f1_score(y_true, y_pred, average='weighted')
 # endregion
