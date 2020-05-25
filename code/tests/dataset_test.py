@@ -2,10 +2,11 @@
 
 import os
 import unittest
+from collections.abc import Iterable
 
 from algorithm.dataset import ImageCaptionDataset
 from torch import Tensor
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import Dataset
 
 
 class TestImageCaptionDataset(unittest.TestCase):
@@ -20,33 +21,86 @@ class TestImageCaptionDataset(unittest.TestCase):
             'input'
         ))
 
+    def validate_sample(self, sample, has_labels):
+        """Validate a sample from an `ImageCaptionDataset` instance."""
+        num_fields = 3
+        if has_labels:
+            num_fields += 1
+
+        self.assertEqual(len(sample), num_fields)
+
+        if num_fields == 4:
+            image_id, images, captions, labels = sample
+            self.assertIsInstance(labels, Iterable)
+        else:
+            image_id, images, captions = sample
+
+        self.assertIsInstance(image_id, str)
+        self.assertIsInstance(images, Tensor)
+
     def test_tier_train(self):
         """Assert that `ImageCaptionDataset` successfully loads training set \
-        data using a `DataLoader`."""
+        data."""
         tier = 'train'
         data = ImageCaptionDataset(self.data_dir, tier)
         self.assertIsInstance(data, Dataset)
-        loader = DataLoader(data)
-        sample = next(iter(loader))
-        # Ensure labels were returned
-        self.assertEqual(len(sample), 3)
-        # Check image output of data loader
-        images, _, _ = sample
-        self.assertIsInstance(images, Tensor)
+        # Get first sample from dataset
+        sample = data[0]
+        self.validate_sample(sample, has_labels=True)
 
     def test_tier_test(self):
-        """Assert that `ImageCaptionDataset` successfully loads training set \
-        data using a `DataLoader`."""
+        """Assert that `ImageCaptionDataset` successfully loads test set \
+        data."""
         tier = 'test'
         data = ImageCaptionDataset(self.data_dir, tier)
         self.assertIsInstance(data, Dataset)
-        loader = DataLoader(data)
-        sample = next(iter(loader))
-        # Ensure there are no labels
-        self.assertEqual(len(sample), 2)
-        # Check image output of data loader
-        images, _ = sample
-        self.assertIsInstance(images, Tensor)
+        # Get first sample from dataset
+        sample = data[0]
+        self.validate_sample(sample, has_labels=False)
+
+    def test_tier_train_length(self):
+        """Assert that the `ImageCaptionDataset` __len__ method corresponds \
+        to the actual length of the training dataset."""
+        tier = 'train'
+        data = ImageCaptionDataset(self.data_dir, tier)
+        self.assertIsInstance(data, Dataset)
+
+        # Get length of dataset and check boundary conditions
+        length = len(data)
+
+        with self.assertRaises(KeyError):
+            _ = data[-1]
+
+        first = data[0]
+        self.validate_sample(first, has_labels=True)
+
+        last = data[length - 1]
+        self.validate_sample(last, has_labels=True)
+
+        with self.assertRaises(KeyError):
+            _ = data[length]
+
+    def test_tier_test_length(self):
+        """Assert that the `ImageCaptionDataset` __len__ method corresponds \
+        to the actual length of the test dataset."""
+        tier = 'test'
+        data = ImageCaptionDataset(self.data_dir, tier)
+        self.assertIsInstance(data, Dataset)
+
+        # Get length of dataset and check boundary conditions
+        length = len(data)
+
+        with self.assertRaises(KeyError):
+            _ = data[-1]
+
+        first = data[0]
+        self.validate_sample(first, has_labels=False)
+
+        last = data[length - 1]
+        self.validate_sample(last, has_labels=False)
+
+        with self.assertRaises(KeyError):
+            _ = data[length]
 
 
 if __name__ == '__main__':
