@@ -1,6 +1,7 @@
 pandas
 Pillow
 pre-commit
+sklearn
 termcolor
 torch
 torchtext
