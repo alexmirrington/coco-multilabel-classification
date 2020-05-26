@@ -6,13 +6,16 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from termcolor import colored
 
 
-def log_metrics_file(config, metrics: MetricCollection):
+def log_metrics_file(config, metrics):
     """Log all cached metrics in the `metrics` collection to a log file."""
     filename = os.path.join(config.log_dir, f'{config.name}.txt')
     output = ''
-    for idx, (key, value) in enumerate(metrics.cache.items()):
+    metrics_dict = metrics
+    if isinstance(metrics, MetricCollection):
+        metrics_dict = metrics.cache
+    for idx, (key, value) in enumerate(metrics_dict.items()):
         output += f'{key}: {value:4f}'
-        if idx != len(metrics.cache) - 1:
+        if idx != len(metrics_dict) - 1:
             output += ', '
         else:
             output += '\n'
@@ -22,14 +25,30 @@ def log_metrics_file(config, metrics: MetricCollection):
         f.write(output)
 
 
-def log_metrics_stdout(config, metrics: MetricCollection, color=True):
+def log_metrics_stdout(config, metrics, colors=None, newline=True):
     """Log all cached metrics in the `metrics` collection to stdout."""
     output = ''
-    for key, value in metrics.cache.items():
-        valstr = colored(f'{value:4f}', color='green', attrs=['bold', ]) \
-            if color else f'{value:4f}'
+    metrics_dict = metrics
+    if isinstance(metrics, MetricCollection):
+        metrics_dict = metrics.cache
+
+    if isinstance(colors, str):
+        colors = [colors for idx in range(len(metrics_dict))]
+
+    for idx, (key, value) in enumerate(metrics_dict.items()):
+        color = None
+        if colors is not None and idx < len(colors):
+            color = colors[idx]
+
+        if type(value) == float:
+            value = f'{value:4f}'
+        valstr = colored(value, color=color, attrs=['bold', ]) \
+            if color else value
         output += f'{key}: {valstr} '
-    print(output.rstrip())
+    output = output.rstrip()
+    if not newline:
+        output = f'{output}\r'
+    print(output, end='\n' if newline else '')
 
 
 def binarise_labels(data, classes=None):

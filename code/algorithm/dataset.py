@@ -5,9 +5,11 @@ from collections.abc import Iterable
 from io import StringIO
 
 import pandas as pd
+import torch
 import torchvision.transforms as transforms
 from PIL import Image
 from torch.utils.data import Dataset
+from utilities import binarise_labels
 
 # from torchtext.vocab import GloVe
 
@@ -16,13 +18,20 @@ def variable_tensor_size_collator(batch):
     """Collate a batch ready for dataloaders to allow for image \
     tensors of variable size."""
     assert isinstance(batch, Iterable)
-    return list(zip(*batch))
+    transpose = list(zip(*batch))
+    for idx, field in enumerate(transpose):
+        try:
+            transpose[idx] = torch.stack(field)
+        except Exception:
+            continue
+    return transpose
 
 
 class ImageCaptionDataset(Dataset):
     """Class for dataset interaction, designed for use with PyTorch."""
 
     TIERS = ('train', 'test')
+    CLASSES = tuple(range(20))
 
     def __init__(
             self,
@@ -72,6 +81,12 @@ class ImageCaptionDataset(Dataset):
             self.data[lbl_col] = self.data[lbl_col].apply(
                 lambda lbls: [int(lbl) for lbl in lbls.split()]
             )
+            binarised, _ = binarise_labels(
+                list(self.data[lbl_col]),
+                classes=self.CLASSES
+            )
+            binarised = [torch.Tensor(vec) for vec in binarised]
+            self.data[lbl_col] = binarised
 
     def __getitem__(self, key):
         """Get an item from the dataset for a given index.

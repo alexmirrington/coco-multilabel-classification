@@ -15,9 +15,7 @@ from torch.nn import BCEWithLogitsLoss
 from torch.optim import Adam
 from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
-from utilities import binarise_labels, log_metrics_file, log_metrics_stdout
-
-CLASSES = list(range(0, 20))
+from utilities import log_metrics_file, log_metrics_stdout
 
 
 def main(config):
@@ -25,6 +23,7 @@ def main(config):
     print(colored('Environment:', attrs=['bold', ]))
     cuda = torch.cuda.is_available()
     device = torch.device('cuda' if cuda else 'cpu')
+    print(f'torch: {torch.__version__}')
     print(f'{device}: {torch.cuda.get_device_name(device)}')
     print(colored('Preprocessing...', color='cyan', attrs=['bold', ]))
 
@@ -48,24 +47,27 @@ def main(config):
     if config.load:
         # Load model from file
         try:
-            model, optimiser, loss, epoch = load(config)
+            model, optimiser, loss_func, epoch = load(config)
         except ValueError as e:
             print(colored(e.args[0], color='red'))
             return
-        train(model, optimiser, loss, train_data, config, metrics, epoch)
+        train(model, optimiser, loss_func, train_data, val_data,
+              config, metrics, epoch)
     else:
         # Example configuration, TODO migrate to model factory
-        model = FasterRCNN()
-        loss = BCEWithLogitsLoss()
+        model = FasterRCNN(ImageCaptionDataset.CLASSES)
+        loss_func = BCEWithLogitsLoss()
         optimiser = Adam(model.parameters())
-        train(model, optimiser, loss, train_data, config, metrics)
-
+        train(model, optimiser, loss_func, train_data, val_data,
+              config, metrics)
     if config.test:
         test(model, config, test_data)
 
 
 def load(config):
     """Load a model from file."""
+    print(colored('Loading model...', color='cyan', attrs=['bold', ]))
+
     path = config.load
     if os.path.exists(os.path.join(config.checkpoint_dir, config.load)):
         path = os.path.join(config.checkpoint_dir, config.load)
@@ -78,8 +80,13 @@ def load(config):
     model_class = checkpoint['model_class']
     optimiser_class = checkpoint['optimiser_class']
 
-    model = model_class()
+    model = model_class(ImageCaptionDataset.CLASSES)
     model.load_state_dict(checkpoint['model_state_dict'])
+    # Move model to device
+    cuda = torch.cuda.is_available()
+    device = torch.device('cuda' if cuda else 'cpu')
+    model = model.to(device)
+
     optimiser = optimiser_class(model.parameters())
     optimiser.load_state_dict(checkpoint['optimiser_state_dict'])
     epoch = checkpoint['epoch']
@@ -90,6 +97,7 @@ def load(config):
 
 def save(model, optimiser, loss, config, epoch):
     """Save a model to file."""
+    print(colored('Saving model...', color='cyan', attrs=['bold', ]))
     path = os.path.join(config.checkpoint_dir, f'{config.name}.pt')
     if not os.path.exists(config.checkpoint_dir):
         os.mkdir(config.checkpoint_dir)
@@ -104,10 +112,61 @@ def save(model, optimiser, loss, config, epoch):
     }, path)
 
 
-def train(model, optimiser, loss, data, config, metrics, epoch=0):
+def train(model, optimiser, loss_func, train_data, val_data, config, metrics,
+          epoch=None):
     """Train a model using the given optimiser and loss function."""
-    if not config.nosave:
-        save(model, optimiser, loss, config, epoch)
+    print(colored('Training...', color='cyan', attrs=['bold', ]))
+
+    # Move model to device
+    cuda = torch.cuda.is_available()
+    device = torch.device('cuda' if cuda else 'cpu')
+    model = model.to(device)
+    model.train()
+
+    # Create dataloader
+    loader_kwargs = {'num_workers': 1, 'pin_memory': True} if cuda else {}
+    loader = DataLoader(
+        train_data,
+        collate_fn=variable_tensor_size_collator,
+        batch_size=config.batch_size,
+        shuffle=True,
+        **loader_kwargs
+    )
+
+    # Determine starting epoch
+    if epoch is not None:
+        start = epoch + 1
+    else:
+        start = 0
+
+    # Start epoch loop
+    for epoch in range(start, config.epochs):
+        epoch_loss = 0
+        for batch_idx, (img_ids, imgs, captions, labels) in enumerate(loader):
+            # Train batch
+            imgs = [img.to(device) for img in imgs]
+            labels = labels.to(device)
+            optimiser.zero_grad()
+            preds, output = model(imgs, captions, device)
+            loss = loss_func(output, labels)
+            loss.backward()
+            optimiser.step()
+
+            # Calculate and display metrics
+            epoch_loss += loss.item()
+            log_metrics_stdout(
+                config,
+                {'epoch': f'{epoch+1}/{config.epochs}',
+                    'batch': f'{batch_idx+1}/{len(loader)}',
+                    'loss': epoch_loss/(batch_idx + 1)},
+                colors=('grey', 'grey', 'blue'),
+                newline=False
+            )
+        evaluate(model, config, val_data, metrics)
+
+        # Save model
+        if not config.nosave:
+            save(model, optimiser, loss_func, config, epoch)
 
 
 def evaluate(model, config, data, metrics):
@@ -128,17 +187,21 @@ def evaluate(model, config, data, metrics):
         **loader_kwargs
     )
 
+    # Collect predictions and evaluate metrics
     all_preds = []
     all_labels = []
-    for img_ids, imgs, captions, labels in tqdm(loader):
-        imgs = [img.to(device) for img in imgs]
-        preds, _ = model(imgs, captions)
-        binarised_labels, _ = binarise_labels(labels, classes=CLASSES)
-        binarised_preds, _ = binarise_labels(preds, classes=CLASSES)
-        all_labels += list(binarised_labels)
-        all_preds += list(binarised_preds)
-    metrics.evaluate(all_preds, all_labels)
-    log_metrics_stdout(config, metrics)
+    with torch.no_grad():
+        for img_ids, imgs, captions, labels in tqdm(loader):
+            imgs = [img.to(device) for img in imgs]
+            preds, output = model(imgs, captions, device)
+            preds = preds.detach().cpu().numpy()
+            labels = labels.numpy()
+            all_labels += list(labels)
+            all_preds += list(preds)
+        metrics.evaluate(all_preds, all_labels)
+
+    # Log metrics
+    log_metrics_stdout(config, metrics, colors='green')
     log_metrics_file(config, metrics)
 
 
@@ -175,14 +238,17 @@ def test(model, config, data):
     with open(path, 'w') as f:
         f.write('ImageID,Labels\n')
 
-    for img_ids, imgs, captions in tqdm(loader):
-        imgs = [img.to(device) for img in imgs]
-        labels, _ = model(imgs, captions)
-        with open(path, 'a') as f:
-            for im_id, out in zip(img_ids, labels):
-                out = [str(i) for i in out]
-                string = f'{im_id},{" ".join(out)}\n'
-                f.write(string)
+    with torch.no_grad():
+        for img_ids, imgs, captions in tqdm(loader):
+            imgs = [img.to(device) for img in imgs]
+            preds, output = model(imgs, captions, device)
+            with open(path, 'a') as f:
+                for im_id, pred in zip(img_ids, preds):
+                    # Decode preds
+                    lbl_idxs = [idx for idx, val in enumerate(pred) if val]
+                    out = [str(i) for i in lbl_idxs]
+                    string = f'{im_id},{" ".join(out)}\n'
+                    f.write(string)
 
 
 def parse_args(args):
@@ -279,7 +345,7 @@ def parse_args(args):
     )
     model_params_group.add_argument(
         '--epochs',
-        default=1,
+        default=5,
         type=int,
         required=False,
         help='The number of epochs to train the model for.'

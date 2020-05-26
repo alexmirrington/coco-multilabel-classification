@@ -2,7 +2,6 @@
 
 import os
 import unittest
-from collections.abc import Iterable
 
 from algorithm.dataset import ImageCaptionDataset
 from torch import Tensor
@@ -31,7 +30,7 @@ class TestImageCaptionDataset(unittest.TestCase):
 
         if num_fields == 4:
             image_id, images, captions, labels = sample
-            self.assertIsInstance(labels, Iterable)
+            self.assertIsInstance(labels, Tensor)
         else:
             image_id, images, captions = sample
 
