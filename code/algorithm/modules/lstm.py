@@ -55,6 +55,7 @@ class BiLSTM(nn.Module):
         packed_captions = torch.nn.utils.rnn.pack_padded_sequence(padded_captions,
                                                seq_lens.cpu().numpy(),
                                                batch_first=True, enforce_sorted=False)
+        packed_captions = packed_captions.to(device)
         _, (h_n, c_n) = self.lstm(packed_captions)
 
         #Concatenate hidden states
