@@ -6,3 +6,4 @@ termcolor
 torch
 torchtext
 torchvision
+nltk
