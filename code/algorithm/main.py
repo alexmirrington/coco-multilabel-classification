@@ -345,7 +345,7 @@ def parse_args(args):
     )
     model_params_group.add_argument(
         '--epochs',
-        default=5,
+        default=9,
         type=int,
         required=False,
         help='The number of epochs to train the model for.'

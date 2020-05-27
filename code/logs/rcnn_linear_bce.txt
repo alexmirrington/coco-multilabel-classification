@@ -1,0 +1,13 @@
+micro_f1: 0.754989, macro_f1: 0.316767, weighted_f1: 0.879010
+micro_f1: 0.853110, macro_f1: 0.602525, weighted_f1: 0.879771
+micro_f1: 0.888203, macro_f1: 0.697833, weighted_f1: 0.897955
+micro_f1: 0.894444, macro_f1: 0.721883, weighted_f1: 0.901083
+micro_f1: 0.896963, macro_f1: 0.736876, weighted_f1: 0.902070
+micro_f1: 0.897866, macro_f1: 0.739836, weighted_f1: 0.902855
+micro_f1: 0.898391, macro_f1: 0.744720, weighted_f1: 0.902566
+micro_f1: 0.898354, macro_f1: 0.748265, weighted_f1: 0.901720
+micro_f1: 0.898632, macro_f1: 0.749231, weighted_f1: 0.902501
+micro_f1: 0.898051, macro_f1: 0.747897, weighted_f1: 0.901669
+micro_f1: 0.898201, macro_f1: 0.748179, weighted_f1: 0.901933
+micro_f1: 0.897762, macro_f1: 0.746856, weighted_f1: 0.901329
+micro_f1: 0.898095, macro_f1: 0.747834, weighted_f1: 0.901711
