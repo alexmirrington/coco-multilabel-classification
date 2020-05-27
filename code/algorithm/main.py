@@ -24,7 +24,10 @@ def main(config):
     cuda = torch.cuda.is_available()
     device = torch.device('cuda' if cuda else 'cpu')
     print(f'torch: {torch.__version__}')
-    print(f'{device}: {torch.cuda.get_device_name(device)}')
+    if cuda:
+        print(f'{device}: {torch.cuda.get_device_name(device)}')
+    else:
+        print('Using CPU')
     print(colored('Preprocessing...', color='cyan', attrs=['bold', ]))
 
     train_val_data = ImageCaptionDataset(config.data_dir, 'train')
