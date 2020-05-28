@@ -42,7 +42,12 @@ def main(config):
     print(colored('Preprocessing...', color='cyan', attrs=['bold', ]))
 
     # If model requires language, get embedding and text processing
-    if config.model_type not in ['rcnn', 'tfidf', 'cnn']:
+    if config.model_type not in [
+            'rcnn', 'tfidf',
+            'resnet', 'alexnet', 'vgg',
+            'densenet', 'googlenet', 'resnext',
+            'wide_resnet', 'mnasnet'
+            ]:
         embeddings = GloVe(name='6B', dim=100)
         preprocessor = preprocess_caption
     else:
