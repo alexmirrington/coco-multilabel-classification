@@ -1,0 +1,9 @@
+micro_f1: 0.804472, macro_f1: 0.634559, weighted_f1: 0.832161
+micro_f1: 0.809265, macro_f1: 0.649060, weighted_f1: 0.836133
+micro_f1: 0.815326, macro_f1: 0.648917, weighted_f1: 0.841768
+micro_f1: 0.811395, macro_f1: 0.653192, weighted_f1: 0.832294
+micro_f1: 0.816640, macro_f1: 0.650350, weighted_f1: 0.842556
+micro_f1: 0.808654, macro_f1: 0.645216, weighted_f1: 0.832445
+micro_f1: 0.804439, macro_f1: 0.643632, weighted_f1: 0.824412
+micro_f1: 0.803968, macro_f1: 0.650290, weighted_f1: 0.822393
+micro_f1: 0.801696, macro_f1: 0.640893, weighted_f1: 0.822072

@@ -1,8 +1,10 @@
 # Project Specific
 input/
 
-# torchnlp
-.glove
+*.vector_cache
+*.word_vectors_cache
+*checkpoints
+
 
 # MacOS
 .DS_Store

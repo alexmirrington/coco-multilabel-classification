@@ -144,6 +144,7 @@ def train(model, optimiser, loss_func, train_data, val_data, config, metrics,
 
     # Start epoch loop
     for epoch in range(start, config.epochs):
+        model.train()
         epoch_loss = 0
         for batch_idx, (img_ids, imgs, captions, labels) in enumerate(loader):
             # Train batch
