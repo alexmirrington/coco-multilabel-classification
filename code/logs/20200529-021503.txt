@@ -1,2 +1,3 @@
 micro_f1: 0.702053, macro_f1: 0.491366, weighted_f1: 0.710688
 micro_f1: 0.710000, macro_f1: 0.475064, weighted_f1: 0.727771
+micro_f1: 0.715953, macro_f1: 0.472453, weighted_f1: 0.754658

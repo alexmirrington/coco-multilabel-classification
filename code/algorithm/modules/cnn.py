@@ -15,8 +15,6 @@ class CNN(Module):
             self.model = models.resnet18(pretrained=True)
         elif model_name == 'alexnet':
             self.model = models.alexnet(pretrained=True)
-        elif model_name == 'squeezenet':
-            self.model = models.squeezenet1_0(pretrained=True)
         elif model_name == 'vgg':
             self.model = models.vgg16(pretrained=True)
         elif model_name == 'densenet':
@@ -25,16 +23,8 @@ class CNN(Module):
             self.model = models.inception_v3(pretrained=True)
         elif model_name == 'googlenet':
             self.model = models.googlenet(pretrained=True)
-        elif model_name == 'shufflenet':
-            self.model = models.shufflenet_v2_x1_0(pretrained=True)
-        elif model_name == 'mobilenet':
-            self.model = models.mobilenet_v2(pretrained=True)
         elif model_name == 'resnext':
             self.model = models.resnext50_32x4d(pretrained=True)
-        elif model_name == 'wide_resnet':
-            self.model = models.wide_resnet50_2(pretrained=True)
-        elif model_name == 'mnasnet':
-            self.model = models.mnasnet1_0(pretrained=True)
         else:
             self.model = models.resnet18(pretrained=True)
         for param in self.model.parameters():

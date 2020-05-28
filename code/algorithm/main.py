@@ -43,10 +43,9 @@ def main(config):
 
     # If model requires language, get embedding and text processing
     if config.model_type not in [
-            'rcnn', 'tfidf',
-            'resnet', 'alexnet', 'vgg',
-            'densenet', 'googlenet', 'resnext',
-            'wide_resnet', 'mnasnet'
+            'rcnn', 'tfidf', 'resnet',
+            'alexnet', 'vgg', 'densenet',
+            'inception', 'googlenet', 'resnext',
             ]:
         embeddings = GloVe(name='6B', dim=100)
         preprocessor = preprocess_caption
@@ -133,9 +132,9 @@ def main(config):
                           tfidf_vectorizer,
                           config.threshold)
         elif config.model_type in [
-                'resnet', 'alexnet', 'vgg',
-                'densenet', 'googlenet', 'resnext',
-                'wide_resnet', 'mnasnet'
+                'resnet',
+                'alexnet', 'vgg', 'densenet',
+                'inception', 'googlenet', 'resnext'
                 ]:
             model = CNN(ImageCaptionDataset.CLASSES, config.model_type)
 
@@ -446,10 +445,9 @@ def parse_args(args):
                  'alexnet',
                  'vgg',
                  'densenet',
+                 'inception',
                  'googlenet',
-                 'resnext',
-                 'wide_resnet',
-                 'mnasnet'
+                 'resnext'
                  ],
         type=str,
         required=False,
