@@ -55,17 +55,13 @@ def main(config):
     if not config.noval:
         # Use 10% of data for validation
         split = int(0.9*len(train_val_data))
-        # train_data = Subset(train_val_data, range(0, split))
-        # val_data = Subset(train_val_data, range(split, len(train_val_data)))
-        train_data = Subset(train_val_data, range(0, 2))
-        val_data = Subset(train_val_data, range(2, 4))
+        train_data = Subset(train_val_data, range(0, split))
+        val_data = Subset(train_val_data, range(split, len(train_val_data)))
         print(f'Train: {len(train_data)}')
         print(f'Val: {len(val_data)}')
     else:
         # Do not create a validation set
-        #train_data = train_val_data
-        train_data = Subset(train_val_data, range(0, 2))
-
+        train_data = train_val_data
         val_data = None
         print(f'Train: {len(train_data)}')
 
@@ -424,13 +420,14 @@ def parse_args(args):
     )
     model_params_group.add_argument(
         '--model-type',
+        default='rcnn_lstm',
         choices=['rcnn_lstm',
                  'rcnn',
                  'lstm',
                  'tfidf'
                  ],
         type=str,
-        required=True,
+        required=False,
         help='Which model type to run.'
     )
     model_params_group.add_argument(
