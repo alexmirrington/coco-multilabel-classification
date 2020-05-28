@@ -10,6 +10,7 @@ import warnings
 import torch
 from dataset import ImageCaptionDataset, variable_tensor_size_collator
 from metrics import MetricCollection, macro_f1, micro_f1, weighted_f1
+from modules.cnn import CNN
 from modules.faster_rcnn import FasterRCNN
 from modules.lstm import BiLSTM
 from modules.rcnn_lstm import RCNN_LSTM, RCNN_LSTM_Bilinear
@@ -41,7 +42,7 @@ def main(config):
     print(colored('Preprocessing...', color='cyan', attrs=['bold', ]))
 
     # If model requires language, get embedding and text processing
-    if config.model_type not in ['rcnn', 'tfidf']:
+    if config.model_type not in ['rcnn', 'tfidf', 'cnn']:
         embeddings = GloVe(name='6B', dim=100)
         preprocessor = preprocess_caption
     else:
@@ -126,6 +127,8 @@ def main(config):
             model = TFIDF(ImageCaptionDataset.CLASSES,
                           tfidf_vectorizer,
                           config.threshold)
+        elif config.model_type == 'cnn':
+            model = CNN(ImageCaptionDataset.CLASSES, 'alexnet')
 
         loss_func = BCEWithLogitsLoss()
         optimiser = Adam(model.parameters())
@@ -429,7 +432,8 @@ def parse_args(args):
                  'rcnn_lstm_bilinear'
                  'rcnn',
                  'lstm',
-                 'tfidf'
+                 'tfidf',
+                 'cnn'
                  ],
         type=str,
         required=False,
