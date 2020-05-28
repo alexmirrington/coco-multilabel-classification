@@ -15,6 +15,7 @@ from modules.lstm import BiLSTM
 from modules.rcnn_lstm import RCNN_LSTM, RCNN_LSTM_Bilinear
 from modules.tfidf import TFIDF
 from preprocessing import preprocess_caption
+from sklearn.feature_extraction.text import TfidfVectorizer
 from termcolor import colored
 from torch.nn import BCEWithLogitsLoss
 from torch.optim import Adam
@@ -24,7 +25,6 @@ from tqdm import tqdm
 from utilities import log_metrics_file, log_metrics_stdout
 
 warnings.filterwarnings('ignore')
-
 
 
 def main(config):
@@ -43,6 +43,7 @@ def main(config):
     if config.model_type not in ['rcnn']:
         embeddings = GloVe(name='6B', dim=100)
         preprocessor = preprocess_caption
+
     else:
         embeddings = None
         preprocessor = None
@@ -50,30 +51,25 @@ def main(config):
     train_val_data = ImageCaptionDataset(config.data_dir,
                                          'train',
                                          embeddings=embeddings,
-                                         preprocessor=preprocess_caption
+                                         preprocessor=preprocessor
                                          )
     if not config.noval:
         # Use 10% of data for validation
         split = int(0.9*len(train_val_data))
-        # train_data = Subset(train_val_data, range(0, split))
-        # val_data = Subset(train_val_data, range(split, len(train_val_data)))
-        train_data = Subset(train_val_data, range(0, 2))
-        val_data = Subset(train_val_data, range(2, 4))
-
+        train_data = Subset(train_val_data, range(0, split))
+        val_data = Subset(train_val_data, range(split, len(train_val_data)))
         print(f'Train: {len(train_data)}')
         print(f'Val: {len(val_data)}')
     else:
         # Do not create a validation set
-        #train_data = train_val_data
-        train_data = Subset(train_val_data, range(0, 2))
+        train_data = train_val_data
         val_data = None
         print(f'Train: {len(train_data)}')
-
 
     test_data = ImageCaptionDataset(config.data_dir,
                                     'test',
                                     embeddings=embeddings,
-                                    preprocessor=preprocess_caption
+                                    preprocessor=preprocessor
                                     )
     print(f'Test: {len(test_data)}')
 
@@ -86,7 +82,8 @@ def main(config):
 
     if config.model_type == 'tfidf':
         # Get captions in training data as a list of captions
-        caption_list = list(train_val_data.data[train_val_data.data.columns[-1]])
+        caption_list = list(train_val_data.data[
+                            train_val_data.data.columns[-1]])
         # Learn tfidf vectoriser from the train data
         tfidf_vectorizer = TfidfVectorizer(max_features=500,
                                            use_idf=True,
@@ -114,14 +111,14 @@ def main(config):
             model = RCNN_LSTM(ImageCaptionDataset.CLASSES,
                               config.threshold)
         elif config.model_type == 'rcnn_lstm_biliner':
-            model = RCNN_LSTM_Bilinear(ImageCaptiionDataset.CLASSES,
+            model = RCNN_LSTM_Bilinear(ImageCaptionDataset.CLASSES,
                                        config.threshold)
         elif config.model_type == 'rcnn':
             model = FasterRCNN(ImageCaptionDataset.CLASSES,
-                         config.threshold)
+                               config.threshold)
         elif config.model_type == 'lstm':
             model = BiLSTM(ImageCaptionDataset.CLASSES,
-                         config.threshold)
+                           config.threshold)
         elif config.model_type == 'tfidf':
             model = TFIDF(ImageCaptionDataset.CLASSES,
                           tfidf_vectorizer,

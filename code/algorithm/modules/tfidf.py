@@ -4,7 +4,7 @@ import torch.nn as nn
 
 
 class TFIDF(nn.Module):
-    """TFIDF vector for captions is passed through a linear layer to predict."""
+    """TFIDF plus linear layer model to predict labels from captions."""
 
     def __init__(self, classes, tfidf_vectorizer, threshold=0.5):
         """Initialise the TFIDF model."""
@@ -27,4 +27,5 @@ class TFIDF(nn.Module):
         return preds, scores
 
     def tfidf(self, captions):
+        """Return the tfidf vectors for each caption in the iterable."""
         return self.tfidf_vectorizer.transform(captions).toarray()
