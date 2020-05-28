@@ -1,18 +1,19 @@
 """Placeholder file until models other than RCNN are in main."""
 import sys
+
 import torch
 from dataset import ImageCaptionDataset
 from main import load, parse_args, test, train
 from metrics import MetricCollection, macro_f1, micro_f1, weighted_f1
 from modules.rcnn_lstm import RCNN_LSTM_Bilinear
+from modules.tfidf import TFIDF
 from preprocessing import preprocess_caption
+from sklearn.feature_extraction.text import TfidfVectorizer
 from termcolor import colored
 from torch.nn import BCEWithLogitsLoss
 from torch.optim import Adam
 from torch.utils.data import Subset
 from torchtext.vocab import GloVe
-from modules.tfidf import TFIDF
-from sklearn.feature_extraction.text import TfidfVectorizer
 
 
 def main(config):

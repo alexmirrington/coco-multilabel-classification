@@ -2,6 +2,7 @@
 import torch
 import torch.nn as nn
 
+
 class TFIDF(nn.Module):
     """TFIDF vector for captions is passed through a linear layer to predict."""
 

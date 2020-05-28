@@ -6,23 +6,25 @@ import os.path
 import sys
 import time
 import warnings
-warnings.filterwarnings("ignore")
 
 import torch
 from dataset import ImageCaptionDataset, variable_tensor_size_collator
 from metrics import MetricCollection, macro_f1, micro_f1, weighted_f1
+from modules.faster_rcnn import FasterRCNN
+from modules.lstm import BiLSTM
+from modules.rcnn_lstm import RCNN_LSTM, RCNN_LSTM_Bilinear
+from modules.tfidf import TFIDF
+from preprocessing import preprocess_caption
 from termcolor import colored
 from torch.nn import BCEWithLogitsLoss
 from torch.optim import Adam
 from torch.utils.data import DataLoader, Subset
+from torchtext.vocab import GloVe
 from tqdm import tqdm
 from utilities import log_metrics_file, log_metrics_stdout
-from modules.faster_rcnn import FasterRCNN
-from modules.rcnn_lstm import RCNN_LSTM, RCNN_LSTM_Bilinear
-from modules.lstm import BiLSTM
-from modules.tfidf import TFIDF
-from preprocessing import preprocess_caption
-from torchtext.vocab import GloVe
+
+warnings.filterwarnings('ignore')
+
 
 
 def main(config):
