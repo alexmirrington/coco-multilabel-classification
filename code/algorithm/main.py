@@ -127,8 +127,12 @@ def main(config):
             model = TFIDF(ImageCaptionDataset.CLASSES,
                           tfidf_vectorizer,
                           config.threshold)
-        elif config.model_type == 'cnn':
-            model = CNN(ImageCaptionDataset.CLASSES, 'alexnet')
+        elif config.model_type in [
+                'resnet', 'alexnet', 'vgg',
+                'densenet', 'googlenet', 'resnext',
+                'wide_resnet', 'mnasnet'
+                ]:
+            model = CNN(ImageCaptionDataset.CLASSES, config.model_type)
 
         loss_func = BCEWithLogitsLoss()
         optimiser = Adam(model.parameters())
@@ -433,7 +437,14 @@ def parse_args(args):
                  'rcnn',
                  'lstm',
                  'tfidf',
-                 'cnn'
+                 'resnet',
+                 'alexnet',
+                 'vgg',
+                 'densenet',
+                 'googlenet',
+                 'resnext',
+                 'wide_resnet',
+                 'mnasnet'
                  ],
         type=str,
         required=False,
