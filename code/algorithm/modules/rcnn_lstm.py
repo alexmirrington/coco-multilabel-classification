@@ -13,7 +13,7 @@ class RCNN_LSTM(nn.Module):
     final scores.
     """
 
-    def __init__(self, classes, embeddings_dim=100, threshold=0.5):
+    def __init__(self, classes, threshold, embeddings_dim=100):
         """Initialise the combined model."""
         super(RCNN_LSTM, self).__init__()
 

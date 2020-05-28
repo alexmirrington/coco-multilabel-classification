@@ -6,8 +6,8 @@ import torch.nn as nn
 class BiLSTM(nn.Module):
     """BiLSTM which predicts multiple labels from caption data."""
 
-    def __init__(self, classes, embeddings_dim=100,
-                 hidden_size=128, threshold=0.5):
+    def __init__(self, classes, threshold, embeddings_dim=100,
+                 hidden_size=128):
         """Initialise the BiLSTM.
 
         Args

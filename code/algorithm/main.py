@@ -43,7 +43,6 @@ def main(config):
     if config.model_type not in ['rcnn']:
         embeddings = GloVe(name='6B', dim=100)
         preprocessor = preprocess_caption
-
     else:
         embeddings = None
         preprocessor = None
@@ -56,13 +55,17 @@ def main(config):
     if not config.noval:
         # Use 10% of data for validation
         split = int(0.9*len(train_val_data))
-        train_data = Subset(train_val_data, range(0, split))
-        val_data = Subset(train_val_data, range(split, len(train_val_data)))
+        # train_data = Subset(train_val_data, range(0, split))
+        # val_data = Subset(train_val_data, range(split, len(train_val_data)))
+        train_data = Subset(train_val_data, range(0, 2))
+        val_data = Subset(train_val_data, range(2, 4))
         print(f'Train: {len(train_data)}')
         print(f'Val: {len(val_data)}')
     else:
         # Do not create a validation set
-        train_data = train_val_data
+        #train_data = train_val_data
+        train_data = Subset(train_val_data, range(0, 2))
+
         val_data = None
         print(f'Train: {len(train_data)}')
 
