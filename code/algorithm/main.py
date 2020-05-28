@@ -40,7 +40,7 @@ def main(config):
     print(colored('Preprocessing...', color='cyan', attrs=['bold', ]))
 
     # If model requires language, get embedding and text processing
-    if config.model_type not in ['rcnn']:
+    if config.model_type not in ['rcnn', 'tfidf']:
         embeddings = GloVe(name='6B', dim=100)
         preprocessor = preprocess_caption
     else:
@@ -439,7 +439,7 @@ def parse_args(args):
     )
     model_params_group.add_argument(
         '--epochs',
-        default=9,
+        default=2,
         type=int,
         required=False,
         help='The number of epochs to train the model for.'
