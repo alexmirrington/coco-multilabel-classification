@@ -50,5 +50,5 @@ class CNN(Module):
         self.model.eval()
         results = self.model(input_batch)
         output = self.linear(results)
-        preds = self.activation(results) > self.threshold
+        preds = self.activation(output) > self.threshold
         return preds, output
