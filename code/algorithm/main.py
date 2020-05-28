@@ -5,17 +5,24 @@ import os
 import os.path
 import sys
 import time
+import warnings
+warnings.filterwarnings("ignore")
 
 import torch
 from dataset import ImageCaptionDataset, variable_tensor_size_collator
 from metrics import MetricCollection, macro_f1, micro_f1, weighted_f1
-from modules.faster_rcnn import FasterRCNN
 from termcolor import colored
 from torch.nn import BCEWithLogitsLoss
 from torch.optim import Adam
 from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 from utilities import log_metrics_file, log_metrics_stdout
+from modules.faster_rcnn import FasterRCNN
+from modules.rcnn_lstm import RCNN_LSTM, RCNN_LSTM_Bilinear
+from modules.lstm import BiLSTM
+from modules.tfidf import TFIDF
+from preprocessing import preprocess_caption
+from torchtext.vocab import GloVe
 
 
 def main(config):
@@ -30,14 +37,42 @@ def main(config):
         print('Using CPU')
     print(colored('Preprocessing...', color='cyan', attrs=['bold', ]))
 
-    train_val_data = ImageCaptionDataset(config.data_dir, 'train')
-    split = int(0.9*len(train_val_data))
-    train_data = Subset(train_val_data, range(0, split))
-    val_data = Subset(train_val_data, range(split, len(train_val_data)))
-    print(f'Train: {len(train_data)}')
-    print(f'Val: {len(val_data)}')
+    # If model requires language, get embedding and text processing
+    if config.model_type not in ['rcnn']:
+        embeddings = GloVe(name='6B', dim=100)
+        preprocessor = preprocess_caption
+    else:
+        embeddings = None
+        preprocessor = None
 
-    test_data = ImageCaptionDataset(config.data_dir, 'test')
+    train_val_data = ImageCaptionDataset(config.data_dir,
+                                         'train',
+                                         embeddings=embeddings,
+                                         preprocessor=preprocess_caption
+                                         )
+    if not config.noval:
+        # Use 10% of data for validation
+        split = int(0.9*len(train_val_data))
+        # train_data = Subset(train_val_data, range(0, split))
+        # val_data = Subset(train_val_data, range(split, len(train_val_data)))
+        train_data = Subset(train_val_data, range(0, 2))
+        val_data = Subset(train_val_data, range(2, 4))
+
+        print(f'Train: {len(train_data)}')
+        print(f'Val: {len(val_data)}')
+    else:
+        # Do not create a validation set
+        #train_data = train_val_data
+        train_data = Subset(train_val_data, range(0, 2))
+        val_data = None
+        print(f'Train: {len(train_data)}')
+
+
+    test_data = ImageCaptionDataset(config.data_dir,
+                                    'test',
+                                    embeddings=embeddings,
+                                    preprocessor=preprocess_caption
+                                    )
     print(f'Test: {len(test_data)}')
 
     # Set up metrics to collect
@@ -47,18 +82,49 @@ def main(config):
         'weighted_f1': weighted_f1
     })
 
+    if config.model_type == 'tfidf':
+        # Get captions in training data as a list of captions
+        caption_list = list(train_val_data.data[train_val_data.data.columns[-1]])
+        # Learn tfidf vectoriser from the train data
+        tfidf_vectorizer = TfidfVectorizer(max_features=500,
+                                           use_idf=True,
+                                           tokenizer=preprocess_caption)
+        tfidf_vectorizer.fit(caption_list)
+
     if config.load:
         # Load model from file
         try:
-            model, optimiser, loss_func, epoch = load(config)
-        except ValueError as e:
+            if config.model_type == 'tfidf':
+                model, optimiser, loss_func, epoch = load(config,
+                                                          tfidf_vectorizer)
+            else:
+                model, optimiser, loss_func, epoch = load(config)
+        except (ValueError, AttributeError) as e:
             print(colored(e.args[0], color='red'))
+            print('Ensure you are trying to load a model of the same type you have specified \
+                    with --model-type.')
             return
         train(model, optimiser, loss_func, train_data, val_data,
               config, metrics, epoch)
     else:
-        # Example configuration, TODO migrate to model factory
-        model = FasterRCNN(ImageCaptionDataset.CLASSES)
+        # Create a new model
+        if config.model_type == 'rcnn_lstm':
+            model = RCNN_LSTM(ImageCaptionDataset.CLASSES,
+                              config.threshold)
+        elif config.model_type == 'rcnn_lstm_biliner':
+            model = RCNN_LSTM_Bilinear(ImageCaptiionDataset.CLASSES,
+                                       config.threshold)
+        elif config.model_type == 'rcnn':
+            model = FasterRCNN(ImageCaptionDataset.CLASSES,
+                         config.threshold)
+        elif config.model_type == 'lstm':
+            model = BiLSTM(ImageCaptionDataset.CLASSES,
+                         config.threshold)
+        elif config.model_type == 'tfidf':
+            model = TFIDF(ImageCaptionDataset.CLASSES,
+                          tfidf_vectorizer,
+                          config.threshold)
+
         loss_func = BCEWithLogitsLoss()
         optimiser = Adam(model.parameters())
         train(model, optimiser, loss_func, train_data, val_data,
@@ -67,7 +133,7 @@ def main(config):
         test(model, config, test_data)
 
 
-def load(config):
+def load(config, *args):
     """Load a model from file."""
     print(colored('Loading model...', color='cyan', attrs=['bold', ]))
 
@@ -83,7 +149,13 @@ def load(config):
     model_class = checkpoint['model_class']
     optimiser_class = checkpoint['optimiser_class']
 
-    model = model_class(ImageCaptionDataset.CLASSES)
+    if config.model_type == 'tfidf':
+        model = model_class(ImageCaptionDataset.CLASSES,
+                            args[0],
+                            config.threshold)
+    else:
+        model = model_class(ImageCaptionDataset.CLASSES,
+                            config.threshold)
     model.load_state_dict(checkpoint['model_state_dict'])
     # Move model to device
     cuda = torch.cuda.is_available()
@@ -166,7 +238,9 @@ def train(model, optimiser, loss_func, train_data, val_data, config, metrics,
                 colors=('grey', 'grey', 'blue'),
                 newline=False
             )
-        evaluate(model, config, val_data, metrics)
+        # Perform validation with given metrics
+        if not config.noval:
+            evaluate(model, config, val_data, metrics)
 
         # Save model
         if not config.nosave:
@@ -289,6 +363,12 @@ def parse_args(args):
         help='Don\'t save model state.'
     )
     general_group.add_argument(
+        '--noval',
+        action='store_true',
+        required=False,
+        help='Train with the whole train set and don\'t perform validation.'
+    )
+    general_group.add_argument(
         '--name',
         type=str,
         default=time.strftime('%Y%m%d-%H%M%S'),
@@ -341,6 +421,17 @@ def parse_args(args):
         help='The directory to save model checkpoints to.'
     )
     model_params_group.add_argument(
+        '--model-type',
+        choices=['rcnn_lstm',
+                 'rcnn',
+                 'lstm',
+                 'tfidf'
+                 ],
+        type=str,
+        required=True,
+        help='Which model type to run.'
+    )
+    model_params_group.add_argument(
         '--batch-size',
         default=4,
         type=int,
@@ -353,6 +444,13 @@ def parse_args(args):
         type=int,
         required=False,
         help='The number of epochs to train the model for.'
+    )
+    model_params_group.add_argument(
+        '--threshold',
+        default=0.5,
+        type=float,
+        required=False,
+        help='Threshold for sigmoid output to be predicted as a label.'
     )
     return parser.parse_args(args)
 

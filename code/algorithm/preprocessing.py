@@ -1,13 +1,15 @@
 """ Preprocessing utilities."""
 import re
+
 import nltk
 from nltk.tokenize import word_tokenize
+from nltk.stem.snowball import SnowballStemmer
 
 nltk.download('punkt')
 nltk.download('stopwords')
 
 
-def preprocess_caption(caption, rm_stopwords=True):
+def preprocess_caption(caption, rm_stopwords=True, stem=False):
     """Preprocess the given caption.
 
     Params
@@ -32,5 +34,10 @@ def preprocess_caption(caption, rm_stopwords=True):
     if rm_stopwords:
         stopwords = set(nltk.corpus.stopwords.words('english'))
         caption = [w for w in caption if w not in stopwords]
+
+    # Stemming
+    if stem:
+        stemmer = SnowballStemmer('english')
+        caption = [stemmer.stem(w) for w in caption]
 
     return caption
