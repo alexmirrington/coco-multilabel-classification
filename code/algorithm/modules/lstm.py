@@ -7,7 +7,7 @@ class BiLSTM(nn.Module):
     """BiLSTM which predicts multiple labels from caption data."""
 
     def __init__(self, classes, threshold=0.5, embeddings_dim=100,
-                 hidden_size=64):
+                 hidden_size=128):
         """Initialise the BiLSTM.
 
         Args
