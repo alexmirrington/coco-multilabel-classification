@@ -1,25 +1,21 @@
 """Placeholder file until models other than RCNN are in main."""
-from main import load, save, evaluate, train, test, parse_args
-from torchtext.vocab import GloVe
 import sys
-from termcolor import colored
-import torch
-from dataset import ImageCaptionDataset, variable_tensor_size_collator
-from metrics import MetricCollection, macro_f1, micro_f1, weighted_f1
-from torch.utils.data import DataLoader, Subset
 
-from modules.faster_rcnn import FasterRCNN
+import torch
+from dataset import ImageCaptionDataset
+from main import load, parse_args, test, train
+from metrics import MetricCollection, macro_f1, micro_f1, weighted_f1
+from modules.rcnn_lstm import RCNN_LSTM_Bilinear
+from preprocessing import preprocess_caption
+from termcolor import colored
 from torch.nn import BCEWithLogitsLoss
 from torch.optim import Adam
-from preprocessing import preprocess_caption
-from modules.lstm import BiLSTM
-from modules.rcnn_lstm import RCNN_LSTM
-
+from torch.utils.data import Subset
+from torchtext.vocab import GloVe
 
 
 def main(config):
     """Run the object detection model according to the specified config."""
-
     print(colored('Environment:', attrs=['bold', ]))
     cuda = torch.cuda.is_available()
     device = torch.device('cuda' if cuda else 'cpu')
@@ -39,6 +35,7 @@ def main(config):
     split = int(0.9*len(train_val_data))
     train_data = Subset(train_val_data, range(0, split))
     val_data = Subset(train_val_data, range(split, len(train_val_data)))
+
     print(f'Train: {len(train_data)}')
     print(f'Val: {len(val_data)}')
 
@@ -66,8 +63,7 @@ def main(config):
               config, metrics, epoch)
     else:
         # Example configuration, TODO migrate to model factory
-        #model = BiLSTM(ImageCaptionDataset.CLASSES)
-        model = RCNN_LSTM(ImageCaptionDataset.CLASSES)
+        model = RCNN_LSTM_Bilinear(ImageCaptionDataset.CLASSES)
 
         loss_func = BCEWithLogitsLoss()
         optimiser = Adam(model.parameters())
@@ -75,12 +71,6 @@ def main(config):
               config, metrics)
     if config.test:
         test(model, config, test_data)
-
-
-
-
-
-
 
 
 if __name__ == '__main__':

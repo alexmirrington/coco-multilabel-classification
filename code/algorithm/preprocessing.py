@@ -1,8 +1,11 @@
+""" Preprocessing utilities."""
 import re
 import nltk
 from nltk.tokenize import word_tokenize
+
 nltk.download('punkt')
 nltk.download('stopwords')
+
 
 def preprocess_caption(caption, rm_stopwords=True):
     """Preprocess the given caption.
@@ -16,7 +19,6 @@ def preprocess_caption(caption, rm_stopwords=True):
     ---
     List of tokens extracted from the caption.
     """
-
     # Convert to lowercase
     caption = caption.lower()
 
@@ -26,10 +28,9 @@ def preprocess_caption(caption, rm_stopwords=True):
     # Tokenise
     caption = word_tokenize(caption)
 
+    # Remove stopwords
     if rm_stopwords:
         stopwords = set(nltk.corpus.stopwords.words('english'))
-        # Uncomment the below line to prevent removal of certain stopwords.
-        # stopwords = stopwords.difference(set(['him', 'her']))
-        caption = [w for w in caption if not w in stopwords]
+        caption = [w for w in caption if w not in stopwords]
 
     return caption
