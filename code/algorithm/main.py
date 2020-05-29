@@ -45,7 +45,7 @@ def main(config):
     if config.model_type not in [
             'rcnn', 'tfidf', 'resnet',
             'alexnet', 'vgg', 'densenet',
-            'inception', 'googlenet', 'resnext',
+            'inception', 'googlenet', 'resnext'
             ]:
         embeddings = GloVe(name='6B', dim=100)
         preprocessor = preprocess_caption
@@ -136,7 +136,9 @@ def main(config):
                 'alexnet', 'vgg', 'densenet',
                 'inception', 'googlenet', 'resnext'
                 ]:
-            model = CNN(ImageCaptionDataset.CLASSES, config.model_type)
+            model = CNN(ImageCaptionDataset.CLASSES,
+                        config.model_type,
+                        config.threshold)
 
         loss_func = BCEWithLogitsLoss()
         optimiser = Adam(model.parameters())
@@ -165,6 +167,12 @@ def load(config, *args):
     if config.model_type == 'tfidf':
         model = model_class(ImageCaptionDataset.CLASSES,
                             args[0],
+                            config.threshold)
+    elif config.model_type in ['resnet', 'alexnet', 'vgg', 'densenet',
+                               'inception', 'googlenet', 'resnext']:
+
+        model = model_class(ImageCaptionDataset.CLASSES,
+                            config.model_name,
                             config.threshold)
     else:
         model = model_class(ImageCaptionDataset.CLASSES,
