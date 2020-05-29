@@ -28,6 +28,17 @@ Install all requirements from `requirements.txt`:
 pip install -r requirements.txt
 ```
 
+You can run the deafult configuration for the best model training loop as
+```python 
+python main.py
+```
+
+For further details on the arguments, you can call 
+```python 
+python main.py -h
+```
+Also, for detail on the arguments you can see the report.
+
 ## Development Environment Setup
 
 Before contributing to the code base, ensure you have the `pre-commit` hook set up properly by running the following command:
