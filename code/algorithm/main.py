@@ -16,6 +16,7 @@ from modules.rcnn_lstm import RCNN_LSTM, RCNN_LSTM_Bilinear
 from modules.tfidf import TFIDF
 from preprocessing import preprocess_caption
 from sklearn.feature_extraction.text import TfidfVectorizer
+from modules.cnn import CNN
 from termcolor import colored
 from torch.nn import BCEWithLogitsLoss
 from torch.optim import Adam
@@ -105,11 +106,14 @@ def main(config):
         train(model, optimiser, loss_func, train_data, val_data,
               config, metrics, epoch)
     else:
+        # Example configuration, TODO migrate to model factory
+        model = CNN(ImageCaptionDataset.CLASSES, 'resnext')
+        
         # Create a new model
         if config.model_type == 'rcnn_lstm':
             model = RCNN_LSTM(ImageCaptionDataset.CLASSES,
                               config.threshold)
-        elif config.model_type == 'rcnn_lstm_biliner':
+        elif config.model_type == 'rcnn_lstm_bilinear':
             model = RCNN_LSTM_Bilinear(ImageCaptionDataset.CLASSES,
                                        config.threshold)
         elif config.model_type == 'rcnn':
@@ -422,6 +426,7 @@ def parse_args(args):
         '--model-type',
         default='rcnn_lstm',
         choices=['rcnn_lstm',
+                 'rcnn_lstm_bilinear'
                  'rcnn',
                  'lstm',
                  'tfidf'

@@ -39,7 +39,7 @@ class ImageCaptionDataset(Dataset):
             tier,
             embeddings=None,
             preprocessor=None,
-            transform=None):
+            transform=True):
         """Create a new dataset instance that loads images and captions from \
         the provided path for the given tier."""
         super().__init__()
@@ -52,7 +52,7 @@ class ImageCaptionDataset(Dataset):
         self.data = None
         self.embeddings = embeddings
         self.preprocessor = preprocessor
-        self.transform = transform
+        self.is_transform = transform
         self._init_dataset()
 
     def _init_dataset(self):
@@ -98,10 +98,11 @@ class ImageCaptionDataset(Dataset):
         # Get images and apply transforms
         image_file = self.data[self.data.columns[0]][key]
         image = Image.open(os.path.join(self.path, 'data', image_file))
-        if self.transform is not None:
+        if self.is_transform:
             image = self.transform(image)
 
-        image = transforms.ToTensor()(image)
+        if not torch.is_tensor(image):
+            image = transforms.ToTensor()(image)
 
         # Get caption embeddings
         caption = self.data[self.data.columns[-1]][key]
@@ -117,3 +118,17 @@ class ImageCaptionDataset(Dataset):
     def __len__(self):
         """Return the length of the dataset."""
         return len(self.data)
+
+    def transform(self, image):
+        """Transform image so that it can be properly used as input tensors."""
+        preprocess = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]
+            ),
+        ])
+        input_tensor = preprocess(image)
+        return input_tensor
